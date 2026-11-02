@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Banana Fuse</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js", "three/addons/": "/vendor/addons/" } }</script>
+</head>
+<body>
+  <div id="scene"></div>
+  <!-- Roughens lines so the manual's boxes and tables look drawn in pencil. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="pencil"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="3"/></filter>
+    <filter id="pencil-soft"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="7"/><feDisplacementMap in="SourceGraphic" scale="1.4"/></filter>
+  </svg>
+
+  <section id="join" class="screen card">
+    <h1>🍌 Banana Fuse 💣</h1>
+    <p class="sub">Defuse the bomb. Every monkey is missing a sense.</p>
+    <form id="join-form">
+      <input id="name" placeholder="Your name" maxlength="16" required>
+      <input id="room-code" placeholder="Room code (blank = new room)" maxlength="4">
+      <button type="submit">Join</button>
+    </form>
+    <p class="sub">Your browser will ask for the microphone. Voice chat happens in the game.</p>
+    <p id="join-error" class="error"></p>
+  </section>
+
+  <section id="lobby" class="screen card hidden">
+    <h1>Room <span id="lobby-code"></span> <button id="lobby-menu-btn" class="secondary icon-btn" title="Settings">⚙</button></h1>
+    <p class="sub">Send your friends this link: <a id="share-link"></a></p>
+    <ul id="lobby-players"></ul>
+    <div id="role-picker"></div>
+    <button id="random-btn" class="secondary">🎲 Random roles</button>
+    <p id="mic-status" class="sub"></p>
+    <div id="lobby-settings">
+      <label>Modules per bomb
+        <select id="set-modules">
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="set-chaos"> Chaos slider (keeps rising all round)</label>
+      <label><input type="checkbox" id="set-colorblind"> Color-blind manual (writes color names next to the dots)</label>
+      <label>Timer
+        <select id="set-minutes">
+          <option value="3">3 minutes</option>
+          <option value="5">5 minutes</option>
+          <option value="7">7 minutes</option>
+          <option value="10">10 minutes</option>
+        </select>
+      </label>
+    </div>
+    <button id="start-btn">Start round</button>
+    <p id="lobby-wait" class="sub">Waiting for the host to start.</p>
+    <p class="sub">Made for 3 players. Pick a role, or leave it blank and get whatever's left. With 1 player you get solo practice, with 2 it's Blind + Guide.</p>
+  </section>
+
+  <section id="game" class="screen hidden">
+    <div id="role-card"></div>
+    <ul id="game-players"></ul>
+    <div id="manual" class="hidden"></div>
+    <footer>
+      <button id="manual-btn" class="secondary hidden">📖 Manual (M)</button>
+      <button id="wheel-btn" class="secondary">✋ Gestures (E)</button>
+      <div class="sub keys" id="key-hints"></div>
+    </footer>
+    <button id="menu-btn" class="secondary" title="Menu (Esc)">⚙</button>
+    <div id="emote-wheel" class="overlay hidden"><div class="wheel"></div></div>
+    <div id="result" class="overlay hidden">
+      <div class="result-box card">
+        <h2 id="result-title"></h2>
+        <p id="result-reason"></p>
+        <div id="result-host">
+          <button id="again-btn">Play again</button>
+          <button id="lobby-btn" class="secondary">Back to lobby</button>
+        </div>
+        <p id="result-wait" class="sub">Waiting for the host.</p>
+        <button id="peek-btn" class="secondary">Look at the bomb</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="menu" class="overlay hidden">
+    <div class="menu-box card">
+      <h2>Menu</h2>
+      <button id="menu-resume">Resume</button>
+      <h3>Settings</h3>
+      <label>Game sounds <input type="range" id="set-sfx" min="0" max="1" step="0.05"></label>
+      <label>Voice chat <input type="range" id="set-voice" min="0" max="1" step="0.05"></label>
+      <label>Look-around speed <input type="range" id="set-look" min="0" max="2" step="0.1"></label>
+      <label>Graphics
+        <select id="set-quality"><option value="auto">Auto (adjusts to your computer)</option><option value="high">High</option><option value="low">Low (faster)</option></select>
+      </label>
+      <div class="menu-actions">
+        <button id="menu-lobby" class="secondary">Back to lobby (ends the round)</button>
+        <button id="menu-leave" class="danger">Leave game</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="client.js"></script>
+</body>
+</html>

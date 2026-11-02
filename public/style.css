@@ -1,0 +1,214 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #1b1a17;
+  color: #f3efe2;
+}
+h1, h2, h3, h4 { margin: 0.4em 0; }
+a { color: #ffd84d; }
+button, input, select {
+  font: inherit;
+  border-radius: 8px;
+  border: none;
+  padding: 0.6em 1em;
+}
+button { background: #ffd84d; color: #1b1a17; font-weight: 700; cursor: pointer; }
+button:disabled { cursor: default; }
+button.secondary { background: #3a3830; color: #f3efe2; }
+.hidden { display: none !important; }
+.sub { color: #b8b19a; }
+.error { color: #ff6b5b; }
+.tag { font-size: 0.8em; color: #b8b19a; }
+.card { background: rgba(27, 26, 23, 0.82); backdrop-filter: blur(6px); border-radius: 14px; }
+
+#scene { position: fixed; inset: 0; z-index: 0; }
+.screen { position: relative; z-index: 1; }
+
+/* Join and lobby float over the 3D room */
+#join, #lobby { max-width: 520px; margin: 6vh auto; padding: 1.5rem 2rem; text-align: center; }
+#join h1 { font-size: 2.6rem; }
+#join-form { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
+#lobby-code { color: #ffd84d; letter-spacing: 0.15em; }
+#lobby ul, #game-players { list-style: none; padding: 0; margin: 0; }
+#lobby li { padding: 0.4em; background: #2a2823; margin: 0.3em 0; border-radius: 8px; }
+#lobby-settings { display: flex; flex-direction: column; gap: 0.6rem; margin: 1rem 0; text-align: left; }
+
+/* In-game HUD: only the panels take clicks, the rest goes to the 3D scene */
+#game { position: fixed; inset: 0; pointer-events: none; }
+#game > * { pointer-events: auto; }
+#role-card { position: absolute; top: 1rem; left: 1rem; width: min(380px, 40vw); padding: 0.7rem 1rem; border-left: 8px solid #ffd84d; }
+#role-card p { margin: 0.3em 0; font-size: 0.9rem; }
+#role-card .voice { color: #ffd84d; font-weight: 600; }
+.role-title { font-size: 1.5rem; font-weight: 800; }
+.role-title span { font-size: 0.85rem; padding: 0.15em 0.5em; border-radius: 6px; background: #000; vertical-align: middle; }
+.role-hands { border-left-color: #ff8a3d !important; }
+.role-eyes { border-left-color: #4dc3ff !important; }
+.role-reader { border-left-color: #b98cff !important; }
+#role-card.flash { animation: flash 0.6s 3; }
+@keyframes flash { 50% { background: #ffd84d; color: #1b1a17; } }
+
+#game-players { position: absolute; top: 1rem; right: 1rem; padding: 0.6rem 1rem; background: rgba(27, 26, 23, 0.82); border-radius: 12px; }
+#game-players li { padding: 0.15em 0; }
+
+#manual {
+  /* Same shape as the binder (0.62 x 0.78) so the page lines up with the book behind it. */
+  position: absolute; left: 50%; top: 5rem; height: calc(100% - 11.5rem); aspect-ratio: 62 / 78; max-width: 92vw;
+  display: flex; flex-direction: column; overflow: hidden;
+  color: #2a2620; border-radius: 6px 14px 14px 6px;
+  background: repeating-linear-gradient(transparent 0 27px, rgba(80, 120, 160, .13) 27px 28px), linear-gradient(#f6eed4, #ece0bb);
+  box-shadow: inset 14px 0 0 #c9473a, inset 16px 0 0 #a8352b, 0 14px 40px #000b;
+  transform: translateX(-50%) rotate(.4deg);
+}
+/* The pages rise out of the binder your monkey just lifted. */
+#manual:not(.hidden) { animation: manual-up .38s .12s cubic-bezier(.2, .9, .3, 1.1) backwards; }
+@keyframes manual-up { from { transform: translateX(-50%) translateY(55vh) scale(.45) rotate(-4deg); opacity: 0; } }
+.manual-head { display: flex; justify-content: space-between; align-items: center; padding: .45rem .7rem .3rem 1.6rem; font: 800 clamp(.75rem, 2cqw, 1.2rem) ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em; }
+.manual-close { margin-left: .5rem; width: 1.6rem !important; height: 1.6rem !important; background: #2a2620; color: #f6eed4; border-radius: 50%; width: 1.9rem; height: 1.9rem; padding: 0; font-size: .95rem; }
+
+.stamp { color: #c9473a; border: 2px solid #c9473a; border-radius: 4px; padding: 0 .35em; transform: rotate(-6deg); font-size: .7rem; }
+.manual-tabs { display: flex; flex-wrap: wrap; gap: .2rem; padding: 0 .7rem 0 1.6rem; border-bottom: 2px solid #2a262033; }
+.manual-tabs button { background: #ddd0a8; color: #4a4232; border-radius: 6px 6px 0 0; padding: .25em .55em; font-size: clamp(.78rem, 2.3cqw, 1.3rem); }
+.manual-tabs button.on { background: #2a2620; color: #ffd84d; }
+/* Every page fills the sheet: the content scales with the page (cqw/cqh) and stretches
+   to the bottom, so short pages get bigger type instead of empty lines. */
+#manual { container-type: size; }
+#manual article { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1.6cqh; padding: 1.4cqh 3cqw 1.6cqh 5.5cqw; font-size: clamp(12px, 2.65cqw, 24px); }
+#manual .lead { margin: 0; padding: .45em .7em; background: #fffaf0b0; border-left: 4px solid #c9473a; border-radius: 0 8px 8px 0; font-style: italic; line-height: 1.3; }
+#manual .groups { flex: 1; display: grid; gap: 1.4cqh 2.2cqw; grid-template-columns: 1fr; grid-auto-rows: auto; align-content: stretch; }
+#manual .groups.n4 { grid-template-columns: 1fr 1fr; }
+#manual .groups section { display: flex; flex-direction: column; background: #fffaf0c0; border: 2px solid #2a2620; border-radius: 10px; box-shadow: 3px 3px 0 #2a262033; overflow: hidden; }
+#manual h4 { margin: 0; padding: .3em .6em; background: #2a2620; color: #f6eed4; font-size: .9em; }
+#manual ol { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; padding: .35em .6em .35em 1.9em; margin: 0; }
+#manual li { margin: .15em 0; line-height: 1.25; }
+#manual em { font-style: normal; font-weight: 800; color: #b23a2e; text-transform: uppercase; }
+#manual .table-fill { flex: 1; display: flex; }
+#manual .table-fill .manual-table { height: 100%; margin: 0; }
+.page-arrows .manual-table td:not(:first-child) { font-size: 2.1em; font-weight: 800; line-height: 1; }
+.page-morse .manual-table td { font-size: 1.35em; }
+.page-morse .manual-table td:last-child { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .25em; font-weight: 800; }
+#manual .columns { flex: 1; margin: 0; gap: 2cqw; }
+#manual .columns div { justify-content: space-evenly; font-size: 2.6em; padding: .2em 0; }
+#manual .columns b { font-size: .35em; }
+#manual .figure { flex: 1; min-height: 45cqh; width: 100%; }
+.page-slider .lead { font-size: 1.2em; }
+.manual-foot { padding: .25rem 1.6rem; font-size: clamp(.7rem, 1.6cqw, 1rem); color: #6b604a; border-top: 1px dashed #2a262044; }
+.manual-table { border-collapse: collapse; width: 100%; }
+.manual-table th, .manual-table td { border: 2px solid #2a2620; padding: .15em .35em; text-align: center; }
+.manual-table th { background: #2a2620; color: #ffd84d; }
+.manual-table td:first-child { text-align: left; white-space: nowrap; font-weight: 700; }
+.sw-green { background: #36b24a; }
+.swatch { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin: 0 .2em 0 .1em; vertical-align: -.05em; border: 1.5px solid #2a2620; }
+.sw-red { background: #e33b2e; } .sw-blue { background: #3466e0; } .sw-yellow { background: #f5d235; }
+.sw-white { background: #fff; } .sw-black { background: #111; }
+.columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: .6rem; }
+.columns div { display: flex; flex-direction: column; align-items: center; gap: .1em; background: #fffaf0; border: 2px solid #2a2620; border-radius: 10px; box-shadow: 3px 3px 0 #2a262055; }
+.columns b { background: #2a2620; color: #ffd84d; border-radius: 50%; width: 1.6em; height: 1.6em; display: grid; place-items: center; }
+
+footer { position: absolute; left: 50%; bottom: .6rem; transform: translateX(-50%); text-align: center; width: max-content; max-width: 96vw; }
+/* Manual and Gestures buttons: same pill, same width, whatever the label says. */
+#wheel-btn, #manual-btn { padding: .5em 1.1em; border-radius: 999px; background: rgba(27, 26, 23, .82); color: #f3efe2; min-width: 12.5rem; margin: 0 .25rem; font-size: 1rem; }
+#emote-wheel { background: rgba(0, 0, 0, .35); z-index: 5; }
+.wheel { position: relative; width: 620px; height: 620px; border-radius: 50%; background: radial-gradient(circle, rgba(27,26,23,.92) 0 30%, rgba(27,26,23,.8) 30% 62%, rgba(27,26,23,.55) 62%); }
+@media (max-height: 760px) { .wheel { transform: scale(.82); } }
+.wheel button { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; background: #3a3830; color: #f3efe2; transition: transform .08s, background .08s; }
+.wheel button.g { width: 4.4rem; height: 4.4rem; font-size: 2.2rem; padding: 0; }
+.wheel button.n { width: 3.1rem; height: 3.1rem; font-size: 1.25rem; padding: 0; font-weight: 800; }
+.wheel button:hover { background: #ffd84d; color: #1b1a17; transform: translate(-50%, -50%) scale(1.15); }
+.wheel-label { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 1.05rem; color: #ffd84d; width: 9rem; text-align: center; }
+#role-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: .8rem 0; }
+.role-pick { display: flex; flex-direction: column; align-items: center; gap: .2rem; padding: .7rem .4rem; background: #2a2823; color: #f3efe2; border: 2px solid transparent; }
+.role-pick .icon { font-size: 2rem; }
+.role-pick small { font-weight: 400; color: #b8b19a; font-size: .75rem; }
+.role-pick em { font-style: normal; font-size: .8rem; color: #ffd84d; }
+.role-pick.mine { border-color: #ffd84d; background: #3a3420; }
+.role-pick.taken { opacity: .55; }
+.keys { font-size: 0.8rem; margin-top: 0.3rem; text-shadow: 0 0 4px #000; }
+
+/* Overlays */
+.overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+#result { background: rgba(0, 0, 0, 0.6); }
+.result-box { padding: 2rem 3rem; text-align: center; }
+.result-box h2 { font-size: 2.6rem; }
+.result-box button { margin: 0.3rem; }
+
+body.shake { animation: shake 0.4s; }
+@keyframes shake {
+  20% { transform: translate(-8px, 4px); }
+  40% { transform: translate(8px, -4px); }
+  60% { transform: translate(-6px, -2px); }
+  80% { transform: translate(6px, 2px); }
+}
+
+/* In-game menu */
+#menu-btn { position: absolute; top: 1rem; left: 50%; transform: translateX(-50%); border-radius: 999px; padding: .4em .8em; font-size: 1.1rem; background: rgba(27, 26, 23, .82); color: #f3efe2; }
+.icon-btn { font-size: 1rem; padding: .25em .55em; vertical-align: middle; }
+#menu { background: rgba(0, 0, 0, .55); z-index: 20; }
+.menu-box { width: min(420px, 92vw); padding: 1.4rem 1.8rem; display: flex; flex-direction: column; gap: .7rem; }
+.menu-box h2, .menu-box h3 { margin: .1em 0; }
+.menu-box h3 { font-size: .95rem; color: #b8b19a; text-transform: uppercase; letter-spacing: .08em; }
+.menu-box label { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.menu-box input[type=range] { width: 55%; padding: 0; accent-color: #ffd84d; }
+.menu-actions { display: flex; flex-direction: column; gap: .5rem; margin-top: .6rem; }
+button.danger { background: #c9473a; color: #fff; }
+/* The wires page has the most rules: slightly smaller type so all four cards fit. */
+#manual article.page-wires { font-size: clamp(11px, 2.3cqw, 22px); gap: 1.2cqh; }
+.page-wires ol { padding-left: 1.6em; }
+.page-arrows .manual-table { table-layout: fixed; }
+.page-arrows .manual-table th:first-child { width: 24%; }
+.page-morse .manual-table td:last-child { font-size: 1.6em; letter-spacing: .15em; line-height: 1; }
+.page-morse .manual-table td { padding-top: 0; padding-bottom: 0; }
+#manual article.page-morse { font-size: clamp(11px, 2.4cqw, 22px); }
+
+/* ---------- Pencil manual: graphite handwriting, hand-drawn boxes, coloured-pencil marks ---------- */
+@font-face { font-family: 'Patrick Hand'; src: url('fonts/patrick-hand.woff2') format('woff2'); font-display: swap; }
+#manual { font-family: 'Patrick Hand', 'Comic Sans MS', cursive; color: #3b3a37; }
+#manual .manual-head { font-family: 'Patrick Hand', cursive; font-weight: 400; letter-spacing: .04em; font-size: clamp(1rem, 2.6cqw, 1.5rem); }
+#manual .manual-tabs { border-bottom: none; background: linear-gradient(#55524c, #55524c) bottom / 100% 1.5px no-repeat; filter: url(#pencil-soft); }
+#manual .manual-tabs button { font-family: inherit; font-weight: 400; background: transparent; color: #6a665e; border: 1.5px solid #6a665e; border-bottom: none; font-size: clamp(.95rem, 2.6cqw, 1.45rem); }
+#manual .manual-tabs button.on { background: #fff3a8; color: #2f2e2b; }
+#manual .lead { background: none; border-left: 3px solid #d0574a; border-radius: 0; font-style: normal; color: #4a4843; filter: url(#pencil-soft); }
+#manual .groups section, #manual .columns div { position: relative; background: none; border: none; box-shadow: none; overflow: visible; }
+/* The box outline is drawn separately so only the lines wobble, not the writing. */
+#manual .groups section::before, #manual .columns div::before {
+  content: ''; position: absolute; inset: 0; border: 2px solid #4d4a45; border-radius: 6px 10px 7px 12px; opacity: .85; filter: url(#pencil); pointer-events: none; }
+#manual h4 { background: none; color: #2f2e2b; font-size: 1.15em; font-weight: 400; padding: .25em .6em 0; }
+#manual h4::after { content: ''; display: block; height: .5em; margin-top: -.1em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 8' preserveAspectRatio='none'%3E%3Cpath d='M2 5 C30 2 60 7 90 3 S115 5 118 4' stroke='%23d0574a' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") left / 70% 100% no-repeat; }
+#manual em { color: #c2402f; font-weight: 400; text-decoration: underline wavy #c2402f88; text-underline-offset: .2em; letter-spacing: .03em; }
+#manual b { font-weight: 400; }
+#manual .swatch { border: 1.5px solid #3b3a37; border-radius: 45% 55% 50% 50%; filter: url(#pencil-soft); }
+#manual .manual-table { border-collapse: separate; border-spacing: 0; filter: url(#pencil-soft); }
+#manual .manual-table th, #manual .manual-table td { border: none; border-right: 1.5px solid #55524c; border-bottom: 1.5px solid #55524c; }
+#manual .manual-table tr > :first-child { border-left: 1.5px solid #55524c; }
+#manual .manual-table tr:first-child > * { border-top: 1.5px solid #55524c; }
+#manual .manual-table th { background: #fff3a855; color: #2f2e2b; font-weight: 400; }
+#manual .manual-table td:first-child { font-weight: 400; }
+#manual .columns b { background: none; color: #c2402f; border: 2px solid #c2402f; font-weight: 400; filter: url(#pencil-soft); }
+#manual .columns span { color: #33322f; }
+#manual .figure { filter: url(#pencil); opacity: .9; }
+#manual .manual-foot { font-family: inherit; }
+
+/* Soundboard patterns in the manual: a pencil-drawn 3x3 with the buttons to press shaded. */
+#manual .mini-grid { display: inline-grid; grid-template-columns: repeat(3, .62em); gap: .1em; padding: .1em; border: 1.5px solid #55524c; border-radius: 3px; vertical-align: middle; }
+#manual .mini-grid i { width: .62em; height: .62em; border: 1px solid #77736b; border-radius: 2px; }
+#manual .mini-grid i.on { background: #3b3a37; border-color: #3b3a37; }
+.page-piano .manual-table td:not(:first-child) { font-size: 1.15em; letter-spacing: .08em; white-space: nowrap; }
+.page-switches .manual-table td { font-size: 1.4em; }
+.page-soundboard .mini-grid { grid-template-columns: repeat(3, 1.05em); }
+.page-soundboard .mini-grid i { width: 1.05em; height: 1.05em; }
+
+/* Module sketch beside the intro line. */
+#manual .intro { display: flex; gap: 2cqw; align-items: center; }
+#manual .intro .lead { flex: 1; }
+#manual .diagram { flex: 0 0 34%; height: auto; max-height: 20cqh; stroke: #3b3a37; stroke-width: 1.3; fill: none; stroke-linecap: round; filter: url(#pencil-soft); }
+#manual .diagram text { stroke: none; fill: #4a4843; font-family: 'Patrick Hand', cursive; font-size: 9px; }
+
+/* Locked-cursor crosshair: a chunky cartoon ring with a dot, yellow over anything pressable. */
+.crosshair { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
+  border: 3px solid #fff8e6; box-shadow: 0 0 0 2px #2a2620, inset 0 0 0 2px #2a2620; pointer-events: none; z-index: 4;
+  transition: transform .1s, border-color .1s; }
+.crosshair::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #fff8e6; box-shadow: 0 0 0 1.5px #2a2620; }
+.crosshair.on { border-color: #ffd84d; transform: scale(1.35); }
+.crosshair.on::after { background: #ffd84d; }

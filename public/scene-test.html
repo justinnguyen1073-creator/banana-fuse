@@ -1,0 +1,60 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banana Fuse scene test</title>
+<style>body{margin:0;background:#111;color:#fff;font:14px system-ui}#scene{position:fixed;inset:0}aside{position:fixed;top:12px;left:12px;padding:12px;background:#18221ce0;pointer-events:none;border-radius:8px}pre{white-space:pre-wrap}</style>
+<script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
+<div id="scene"></div><aside>1 Hands · 2 Eyes · 3 Reader · 4 Solo · 5 Guide<br>Space / right click: lean in · L: lobby · W: won · X: lost<pre id="log"></pre></aside>
+<script type="module">
+import { createScene } from './scene.js';
+const log = document.querySelector('#log');
+const original = { serial: 'ABQ327', modules: [
+  { type:'wires', solved:false, cut:[false,false,false,false,false], colors:['red','blue','yellow','white','black'] },
+  { type:'button', solved:false, holding:false, color:'red', label:'HOLD', strip:'blue' },
+  { type:'keypad', solved:false, symbols:['Ω','ψ','★','¶'], pressed:[false,false,false,false] }
+] };
+let role = 'eyes', status = 'playing', lobby = false, seconds = 299;
+const players = [{id:'me',name:'You',role}, {id:'milo',name:'Milo',role:'hands'}, {id:'pip',name:'Pip',role:'reader'}];
+const scene = createScene(document.querySelector('#scene'), {onAct(action) {
+  console.log('onAct', action);
+  log.textContent = `${role}\n${JSON.stringify(action)}`;
+  const module = original.modules[action.module];
+  if (action.kind === 'hold') module.holding = true;
+  if (action.kind === 'release') module.holding = false;
+  if (action.kind === 'cut') module.cut[action.index] = true;
+  if (action.kind === 'press') module.pressed[action.index] = true;
+  update();
+}});
+window.sceneTest = {setRole(value) {role=value;lobby=false;update();}, setStatus(value) {status=value;update();}, bomb:original};
+function update() {
+  const see = role === 'eyes' || role === 'solo' || role === 'guide', touch = role === 'hands' || role === 'solo';
+  const bomb = structuredClone(original);
+  if (!see) {
+    bomb.serial = null; bomb.modules[0].colors = null;
+    Object.assign(bomb.modules[1], {color:null,label:null,strip:null});
+    bomb.modules[2].symbols = null;
+  } else if (!bomb.modules[1].holding) bomb.modules[1].strip = null;
+  players[0].role = role;
+  players[1].role = role === 'hands' || role === 'solo' ? 'eyes' : 'hands';
+  players[2].role = role === 'reader' ? 'eyes' : 'reader';
+  scene.update({you:'me', players, game:lobby ? null : {status, strikes:1, maxStrikes:3,
+    role:{id:role,touch,seeBomb:see,seeGestures:role!=='hands'},
+    timer:see ? `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}` : null,
+    bomb:role==='reader' ? null : bomb,
+    emotes:role==='hands' ? null : [{id:'pip',from:'Pip',e:'HOLD',age:Date.now()%8000}]
+  }});
+}
+window.addEventListener('keydown', (event) => {
+  const roles = {'1':'hands','2':'eyes','3':'reader','4':'solo','5':'guide'};
+  if (roles[event.key]) { role = roles[event.key]; lobby = false; }
+  if (event.key.toLowerCase() === 'l') lobby = !lobby;
+  if (event.key.toLowerCase() === 'w') status = 'won';
+  if (event.key.toLowerCase() === 'x') status = 'lost';
+  log.textContent = role;
+  update();
+});
+const ticking = setInterval(() => { seconds = Math.max(0,seconds-1); },1000);
+const updating = setInterval(update,200);
+window.addEventListener('pagehide', () => {clearInterval(ticking);clearInterval(updating);scene.dispose();});
+update();
+</script>

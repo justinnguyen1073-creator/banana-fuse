@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Monkey lab</title>
+  <style>html, body { margin: 0; height: 100%; overflow: hidden; background: #9fd3e6; }</style>
+  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js", "three/addons/": "/vendor/addons/" } }</script>
+</head>
+<body>
+<script type="module">
+// Dev page: every role and every gesture side by side. ?row=0 shows roles + first gestures, ?row=1 the rest.
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createMonkey } from './monkey.js';
+
+const params = new URLSearchParams(location.search);
+const row = Number(params.get('row') ?? 0);
+const close = params.has('close');
+const hands = params.has('hands');
+const fixedAge = params.has('age') ? Number(params.get('age')) : null;
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#9fd3e6');
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.5;
+scene.add(new THREE.HemisphereLight('#fff1d6', '#4a4238', 1.6));
+const sun = new THREE.DirectionalLight('#fff0d3', 2.5);
+sun.position.set(-3, 8, 6);
+sun.castShadow = true;
+scene.add(sun);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 20), new THREE.MeshStandardMaterial({ color: '#d7c6a0' }));
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// ?fp shows each gesture from the gesturer's own eyes, one viewport per gesture.
+if (params.has('fp')) {
+  const list = (params.get('e') ?? '👆,👇,👈,👉,👍,👎,🤷,🔁,🤫,✋,🍌,3,7').split(',');
+  const cols = Math.min(4, list.length), rows = Math.ceil(list.length / cols);
+  const views = list.map((e, i) => {
+    const cam = new THREE.PerspectiveCamera(58, (innerWidth / cols) / (innerHeight / rows), 0.05, 50);
+    cam.position.set(i * 30, 1.6, 3);
+    cam.lookAt(i * 30, 1.1, 0);
+    scene.add(cam);
+    const table = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 1.6), new THREE.MeshStandardMaterial({ color: '#3d7a4a' }));
+    table.position.set(i * 30, 0.8, 1);
+    scene.add(table);
+    const m = createMonkey({ name: '', role: params.get('role') ?? 'eyes', firstPerson: true });
+    cam.add(m.root);
+    return { e, cam, m, col: i % cols, row: Math.floor(i / cols) };
+  });
+  floor.scale.set(30, 1, 1);
+  renderer.setScissorTest(true);
+  let last = performance.now();
+  const t0 = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    const w = innerWidth / cols, h = innerHeight / rows;
+    for (const v of views) {
+      if (fixedAge !== null) {
+        if (!v.done) { v.m.update(0, 0, v.cam); v.m.setEmote(v.e, 0, 0); for (let t = 0; t <= fixedAge; t += 16) v.m.update(t, 0.016, v.cam); v.done = true; }
+      } else { v.m.setEmote(v.e, (now - t0) % 4500, now); v.m.update(now, dt, v.cam); }
+      renderer.setViewport(v.col * w, (rows - 1 - v.row) * h, w, h);
+      renderer.setScissor(v.col * w, (rows - 1 - v.row) * h, w, h);
+      renderer.render(scene, v.cam);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  throw 0;
+}
+const sets = [
+  [['hands', null], ['eyes', null], ['reader', null], ['guide', '👆'], ['guide', '👉'], ['guide', '👍'], ['guide', '👎']],
+  [['guide', '🤷'], ['guide', '🔁'], ['guide', '🤫'], ['guide', '✋'], ['guide', '🍌'], ['reader', '3'], ['eyes', '7']],
+  [['guide', '1'], ['guide', '2'], ['guide', '4'], ['guide', '5'], ['guide', '6'], ['guide', '8'], ['guide', '10']],
+];
+const only = params.get('e');
+if (only) sets[row] = only.split(',').map((e) => [params.get('role') ?? 'guide', e]);
+if (params.get('roles')) sets[row] = params.get('roles').split(',').map((r) => [r, null]);
+const monkeys = sets[row].map(([role, e], i, all) => {
+  const m = createMonkey({ name: role, role });
+  m.root.position.x = (i - (all.length - 1) / 2) * (hands ? 2.5 : close ? 1.9 : 1.75);
+  m.root.scale.setScalar(0.79);
+  scene.add(m.root);
+  return { m, e, start: performance.now() };
+});
+const camera = new THREE.PerspectiveCamera(close ? 30 : 40, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, hands ? 2.1 : 2.3, hands ? (monkeys.length > 1 ? 8.5 : 5.2) : close ? 7 : 10.5);
+camera.lookAt(0, hands ? 2.05 : 2.2, 0);
+// ?age= holds a reproducible frame, including the transition and the return to idle.
+if (fixedAge !== null) {
+  for (const x of monkeys) {
+    x.m.update(0, 0, camera);
+    x.m.setEmote(x.e, 0, 0);
+    for (let t = 0; t <= fixedAge; t += 16) x.m.update(t, 0.016, camera);
+    x.m.update(fixedAge, 0.016, camera);
+  }
+}
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  // Re-send each emote every 4s so the gestures loop.
+  if (fixedAge === null) for (const x of monkeys) {
+    const age = (now - x.start) % 4000;
+    x.m.setEmote(x.e, x.e ? age : 0, now);
+    x.m.update(now, dt, camera);
+  }
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
